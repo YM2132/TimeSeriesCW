@@ -49,27 +49,37 @@ names(total_data)[names(total_data) == "Number"] <- "y"
 total_data = subset(total_data, select = c(ds, y))
 rownames(total_data) <- NULL
 
+# Lets take a look at the times in our timeseries
+print(total_data$ds)
+
 # Create a line plot
-p <- ggplot(total_data, aes(x = ds, y = y,  group=1)) +
+p<- ggplot(total_data, aes(x = ds, y = y, group=1)) +
   geom_line() + 
-  geom_point()
-	theme_minimal() +
-	theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-	labs(title = "Total Number of Students per Academic Year",
-	     x = "Academic Year",
-	     y = "Number of Students")
+  geom_point() +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_date(date_breaks = "2 years", date_labels = "%Y") + # Set x-axis breaks to every two years
+  labs(title = "Total Number of Students per Academic Year",
+       x = "Academic Year",
+       y = "Number of Students")
 p
 ```
 
 
 ```{r}
-Sys.setenv(R_STAN_BACKEND = "CMDSTANR")
 library(prophet)
 
 model1 = prophet(total_data)
 
+future = make_future_dataframe(model1, 2, freq = "year")
+future
+preds = predict(model1, future)
+plot(model1, preds)
 ```
+```{r}
+plot_forecast_component(model1, preds, name = "trend")
 
+```
 
 ```{r}
 total_data
