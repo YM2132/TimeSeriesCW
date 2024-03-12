@@ -1,0 +1,248 @@
+---
+title: "MTH6139 Time Series"
+subtitle: "Coursework 1"
+author:
+- name: School of Mathematical Sciences # replace this by your name
+date: "March 2024"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r, echo=FALSE}
+htmltools::img(src = knitr::image_uri("QMlogo.png"), 
+               alt = 'logo', 
+               style = 'position:absolute; top:0; right:0; padding:10px; width:30%;')
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Use this `.Rmd` file as a template for your submission. Delete all content after and including this paragraph. Remember to change the title, subtitle, date and author in the `.Rmd` file heading.
+
+Read this document in full before submitting your coursework or sending questions.
+
+Make sure you are using the latest version of R
+```
+R version 4.3.2 (2023-10-31 ucrt) -- "Eye Holes"
+```
+Older version can cause problems with RMarkdown.
+
+## 1. Coursework Description <a id="section-1"></a>
+This first coursework is worth 15% of the module marks. 
+You are asked to explore a time series using ***Meta's Prophet*** forecasting system. 
+<center>
+![](ProphetLogo.png)
+</center>
+
+The general idea is that this should be an easy coursework where you can score top marks by completing the basics. Anything you do above the bare miniumum will benefit you careerwise as you can add it to your CV to impress prospective employers. So I strongly suggest you
+fully invest yourself in the project. Plagiarism is 
+unnecessary and can get you into trouble, both from a university plagiarism side, as well as potentially legal problems.
+
+You are expected to produce the following:
+
+1. An R Project, `.Rproj`, containing an `.Rmd` file. 
+2. An `.html` file resulting from knitting the `.Rmd` file above.
+3. A GitHub page where you will  post your project.
+4. Additions to your CV reflecting on your project, in particular  adding a URL link to the  GitHub page of your project.
+
+More details on the submission will be provided below.
+
+### 1.1 Meta's Prophet forecasting system.
+Meta has released a forecasting system available in R and Python.
+Check the following page 
+
+<center>
+<https://facebook.github.io/prophet/docs/quick_start.html#r-api>
+</center>
+
+You should also search online for other applications and tutorials.
+
+Prophet is relatively easy to use but has many additional switches that 
+allow more expert fine tuning. At its basic you need to do the following:
+
+1. load the library using `library(prophet)`
+    a) The first time you use it you will need to install it with `install.packages("prophet")`.
+    b) However Meta suggests using the latest release. You can install it by: 
+        i. first run `install.packages("remotes")` and then 
+        ii. run `remotes::install_github('facebook/prophet@*release', subdir='R')`
+    c) You might try either the default install or the latest version. Document in your project if you observe any differences.
+    d) Remember that package installation is something you only do once so **you should not add these `install.packages` instructions to your `.Rmd` file**. In your description you can mention that what you have used but do not run them in the `.Rmd`.
+    e) Also remember from our tutorials that you can save yourself from writing `library()` by writing the name of the library in front of any function in that library. This is done in the code snippet below. Doing this is a matter of taste, some argue that it is more informative to write the name of the library in front of the function.
+
+1. Have your time series set up as an R `dataframe` with the time column called `ds` and the data column called `y`. Note that this is different from a `ts` object so you might need to do some work converting from one to the other (see the example in [Section 1.2](#minimum-expectations))
+    a) To create a `dataframe` you use the function `data.frame()` followed by the named columns you want the dataframe to have (remember a dataframe is just a table with some columns)
+    b) To access the times in a `ts` object you use the function `time()`. This returns a time series with the dates. To convert it to a vector of dates you can use the function `yearmon()` from the `zoo` library. Dealing with dates can be tricky so with other datasets you might have to google a bit to find what to do.
+
+2. If you dataframe is called `d` then run `m = prophet(d)`. This instruction has many optional arguments that you can explore with `?prophet`.
+
+3. Then create future dates for forecasting, this is accomplished with an instruction like `f = make_future_dataframe(m, 8)` where the 8 indicates the number of periods ahead. Check this function's arguments with `?make_future_dataframe`.
+
+4. Then run the usual `predict` function: `p = predict(m, f)`
+
+5. You can then display the forecast using `plot(m, p)`
+
+In this and the next section we use single letter variable names
+(`d`, `f`, and `m`) for illustration purposes only. You should 
+never use single letter variable names, like you do not use single letter filenames. Use use full English words as variable names like `NextYear` or `ModelWithNoSeasonality`,...
+
+Also, help commands like `?prophet`, is something that you use to learn about R functions, and they are generally run in the console. Do not add this to your `.Rmd` document.
+
+### 1.2 Minimum expectations
+Any student that completes the 4 items requested at the start of [Section 1](#coursework-description) within the deadline and a minimum degree of competency (no plagiarism and no ChatGPT) should expect full marks. 
+The coursework is designed so that any student who engages with their studies and attends should easily attain full marks, but you can achieve more by doing more (see next section).
+
+At a minimum, you could consider the following code and add text (remember that an `.Rmd` file contains an exposition, so you need to explain something)
+
+```{r eval=FALSE, include=TRUE}
+co2.df = data.frame(
+  ds=zoo::as.yearmon(time(co2)), 
+  y=co2)
+m = prophet::prophet(co2.df)
+f = prophet::make_future_dataframe(m, periods=8, freq="quarter")
+p = predict(m, f)
+plot(m,p)
+```
+
+This minimum example should work if you have installed all relevant libraries. 
+
+Remember that an `.Rmd`  file is a written document, so you are meant to provide some explanations and not only R code. 
+
+- explain what `co2` means (run `?co2`), 
+- explain the purpose of the project, 
+- display some charts and explain what you see (trends, seasonality, relative size of these). Maybe run a linear regression to gain an understanding of the growth of the series in plain English.
+- Add more visualizations, 
+- look at numbers of interest inside R objects, 
+- check results at each step, 
+- consider different time-frames, 
+- comment on results, 
+- etc. 
+
+So that you end up with an interesting `.html` document that you can impress your friends and family with.
+
+
+Only brief explanations are needed, but these need to be in your own words.
+<span style="color:red">
+**Do not plagiarise**. 
+</span>
+There is no need to plagiarise and it will get you into big problems. If English is not your first language then write short 
+clear sentences less than a line long. You are not graded on the quality 
+of your language. Authors of assignments of outstanding quality, or that look too much like ChatGPT will be asked to explain their results in an oral presentation.
+
+### 1.3 Expectations for Success
+This project offers you an invaluable opportunity to shine and to capitalize on the professional value of your degree by beefing up your CV with 
+a modern data analytics project.
+
+As a result, I suggest that you think in more than *passing a module*, and 
+explore ways in which you can make your project impressive. 
+A prospective employer looking at your CV is likely to be impressed, and this will definitely open doors to great opportunities.
+
+Ideas that you can consider to enhance your project are:
+
+- Explore timeseries other than the `co2` dataset above. Beware that Propet might take a long time to run with large datasets. I have experienced system crashes with large datasets. Consider subsetting a dataset.
+- Consider whether variance needs to be stabilised with some Box-Cox or log transformation. Maybe explore hypothesis tests for heteroscedasticity like the Breusch–Pagan test.
+- Maybe look into the internal details of Prophet and write some of the maths using $\LaTeX$ like this $y=\sqrt{ax^2+bx+\frac{c}{2}}$ (with `$y=\sqrt{ax^2+bx+\frac{c}{2}}$ `).
+- Using [Plotly](https://plotly.com/r/) or 
+[Dygraphs](https://rstudio.github.io/dygraphs/) to create some dynamic charts. Check <https://www.htmlwidgets.org/showcase_leaflet.html> for a list of available R HTML interactive Widgets.
+- Use additional features of RMarkdown like adding images, hyperlinks, etc. 
+  - Check Chapter 2 Basics in  [RMarkdown: The Definitive Guide](https://bookdown.org/yihui/rmarkdown/ "Read book!") by [Yihui Xie](https://en.wikipedia.org/wiki/Yihui_Xie), J.J. Allaire and G. Grolemund. 
+  - Or Chapter 27 RMarkdown in [R for Data Science](https://r4ds.had.co.nz/r-markdown.html "Read book!") by [H. Wickham](https://en.wikipedia.org/wiki/Hadley_Wickham) and G. Grolemund.
+  - You can also look at the insides of this `.Rmd` file to see how to add maths, hyperlinks, images, etc.
+- Explore the full range of features of Prophet (e.g. different seasonality switches,...). You can check the Prophet webpage above or the R help pages with
+`?prophet::prophet`,
+`?prophet::make_future_dataframe`,
+`?prophet::plot.prophet`,
+`?prophet::predict.prophet`, etc.
+
+- Produce more than one forecast, using different configurations, data ranges etc. Compare results.
+- If you learn enough about Prophet, then maybe write your project as a Prophet tutorial.
+
+
+## 2. Submission <a id="section-2"></a>
+### 2.1 Where to submit
+You will submit a single `.zip` file to a portal that will be made available in the [QM+ page of the module](https://qmplus.qmul.ac.uk/course/view.php?id=23715).
+
+### 2.2 What to submit
+You will need to submit a `.zip` file containing the following: 
+
+1. A `.Rproj` file called `Coursework1_XXXXX.Rproj` where XXXXX is replaced by your student ID
+2. An `.Rmd` file called `Coursework1_XXXXX.rmd`.  You should use this file as a template, just delete all sections and fill in with your answers.
+2. A `.html` file called `Coursework1_XXXXX.html` resulting from knitting the `.rmd` file above.
+3. Your updated CV in `.pdf` format with the name `Coursework1_XXXXX.pdf`. The CV should contain a hypelink to your GitHub page.
+
+Check that when you unzip the file, the  project  to opens 
+properly (by double clicking on the `.Rproj` file) and that the `.Rmd` file knits properly into your `.html` file. 
+
+### 2.3 When to submit
+The coursework deadline is Monday 18th of March at noon (12:00 GMT). Late submissions are subject to standard QMUL late submission penalties.
+
+### 2.4 Plagiarism
+Plagiarism can result in very heavy penalties. Do not do this.
+The assignment needs to be written in your own words. 
+If you are not a native English speaker do not worry, most of us aren't either, just write short clear sentences. If you submit ChatGPT text you will be asked to present to a panel of academics.
+
+## 3. Your CV
+You should add something similar to what follows to your CV.
+Do bear in mind that you might be asked about this in a job interview so do not write anything that you do not know. As an aside I would also recommend that you learn plenty of Excel so that you can write what I say below.
+
+### 3.1 Education Section
+In your education section you can add the module and some details
+to the description of your degree.
+
+#### **Education**
+**Queen Mary University of London**
+<br>
+Mathematics BSc  [2021-present]{style="float:right"}
+<br>
+*Relevant Modules:* (write here some modules with applied stuff like prob/stats/coding/finance/...), 
+Time Series (Developed time series model for ... under R and Meta Prophet).
+Mention grades only if they are above 75/100.
+
+### 3.2 Technology Section
+You should have a section called **Technology** with one bullet-point for each
+relevant technology and one bullet-point for the rest:
+
+#### **Technology**
+
+- **Python.** 2 or 3 lines of cool stuff you can do in Python
+- **R.** Linear models, selection of variables, hypothesis testing. Time series Analysis including Triple Exponential Smoothing and ARIMA models. Deployment of case study using Meta's Prophet Time Series tool (see your *GitHub page*). Documentation production using RMarkdown.
+- **Excel.** 2 or 3 lines of cool stuff you can do in Excel: pivot tables, power pivot, management of Excel tables (learn about this) using lookup functions. (learn about all this)
+- Any other coding experience you have: HTML/CSS, Java,...
+- Windows, MacOSX, Word, Powerpoint, Outlook.
+
+##  4. Grading
+You will be graded based on the requirements described in Section 1 and should expect full marks if you comply with the minimum requirements. 
+
+- Do not wait until 5 minutes before the deadline to submit your project. Use the last 24h only as emergency backup.
+- Please do not submit incomplete assignments. 
+- Your  document should be an ***interesting read***. It should not be a list of R instructions executed. It should read like an article where you say something about a time series of interest, what you would like to do, explain any steps you take, any interesting technology you use etc. 
+- Page count is not important. 3 pages is fine if it is an interesting read. 6 pages is also fine. 20 pages is probably too much unless you have something really captivating.
+- **Your target audience is a fellow student.** Do not write thinking that Einstein is going to evaluate your document. Write something that another student at your level will find interesting.
+- Do not forget to create a GitHub page.
+- Do not forget to add your GitHub page url to your  CV in the *Technology* section.
+- Do not give your files random names. Follow the naming convention described in [Section 2.2](#what-to-submit). This only applies to the files you will submit to QM+. In your GitHub page you probably want to use more explanatory file names.
+- Do not submit `.Rmd` files that do not execute or `.zip` files that do not open.
+- Do not submit Word documents where you have changed the `.docx` extension to `.pdf`. Check online how to create a `.pdf` file.
+- Do not submit documents written by ChatGPT unless you want to provide an oral presentation to a panel of academic staff.
+- Do not forget to submit all the files requested in Section 2.
+- Remember to knit your `.Rmd` into an `.html` file. Do not knit your `.Rmd` into a `.pdf` file.
+- It is not professional to  give your variables single letter names as it makes it harder to understand the.  Use full English words, or concatenation of full english words, as variable names.
+- Do not add `install.packages()` or help instructions like `?prophet` to your `.Rmd` file. These instructions are executed on the console during your development, but are not included in your `.Rmd` document. 
+
+<br>
+<hr>
+<br>
+
+::: {.floatting}
+```{r echo=FALSE, out.extra='style="float:left; padding:20px"', out.width='20%'}
+knitr::include_graphics("SteveJobs.jpg")
+```
+<br>
+<br>
+
+####  *"Stay hungry. Stay foolish. Never let go of your appetite to go after new ideas, new experiences, and new adventures."*
+<br>
+― [Steve Jobs](https://en.wikipedia.org/wiki/Steve_Jobs)
+:::

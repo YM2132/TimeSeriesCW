@@ -1,0 +1,76 @@
+---
+title: "Yusuf's Coursework 1"
+author: "Yusuf Mohammad"
+date: "2024-03-11"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r, echo=FALSE}
+htmltools::img(src = knitr::image_uri("QMlogo.png"), 
+               alt = 'logo', 
+               style = 'position:absolute; top:0; right:0; padding:10px; width:30%;')
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<h2><u>Student numbers in higher education - will the Trend continue?</u></h2>
+
+In this project the data we will be exploring tells us the number of students in higher education on a 
+yearly basis. The data has three categories, undergraduate, postgraduate and total, I will select the total
+category from the dataset, the code to do so will be included in this report.
+
+My goal with this project is to explore the trend behind the rising number of students in UK higher education
+and to find out if this trend will continue and if so what can we expect going forwards. This area is of 
+interest to universities who must adapt to the unforeseen demand of higher education and deal with the
+prospect that the demand is not sustainable.
+
+Lets load the data and take a look at it! Note we also filter for only the total category here and modify the dataframe such that the time is in column ds and the data in column y.
+```{r fig.width = 10}
+library(ggplot2)
+
+# Load the dataset
+data <- read.csv('students_by_study_type.csv')
+
+# Filter for "Total" category
+total_data <- data[data$Level.of.study == "Total",]
+
+total_data$Academic.Year <- as.Date(paste0(substr(total_data$Academic.Year, 1, 4), "-01-01"))
+
+#total_data = data.frame(total_data)
+
+# Rename the columns
+names(total_data)[names(total_data) == "Academic.Year"] <- "ds"
+names(total_data)[names(total_data) == "Number"] <- "y"
+total_data = subset(total_data, select = c(ds, y))
+rownames(total_data) <- NULL
+
+# Create a line plot
+p <- ggplot(total_data, aes(x = ds, y = y,  group=1)) +
+  geom_line() + 
+  geom_point()
+	theme_minimal() +
+	theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+	labs(title = "Total Number of Students per Academic Year",
+	     x = "Academic Year",
+	     y = "Number of Students")
+p
+```
+
+
+```{r}
+Sys.setenv(R_STAN_BACKEND = "CMDSTANR")
+library(prophet)
+
+model1 = prophet(total_data)
+
+```
+
+
+```{r}
+total_data
+```

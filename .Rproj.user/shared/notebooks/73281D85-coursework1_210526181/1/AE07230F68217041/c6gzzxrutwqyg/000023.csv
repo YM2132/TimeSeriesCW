@@ -1,0 +1,10 @@
+"0","model1 = prophet(total_data)
+"
+"2","Disabling weekly seasonality. Run prophet with weekly.seasonality=TRUE to override this.
+"
+"2","Disabling daily seasonality. Run prophet with daily.seasonality=TRUE to override this.
+"
+"2","n.changepoints greater than number of observations. Using 16
+"
+"2","Error in loadNamespace(x) : there is no package called ‘rstan’
+"
