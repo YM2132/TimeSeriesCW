@@ -1,5 +1,5 @@
-# ---
-title: "Yusuf's Coursework 1"
+---
+title: "Yusuf's Coursework"
 author: "Yusuf Mohammad"
 date: "2024-03-11"
 output:
@@ -16,71 +16,202 @@ htmltools::img(src = knitr::image_uri("QMlogo.png"),
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+suppressPackageStartupMessages({
+  # Load the necessary libraries
+  library(zoo)
+  library(ggplot2)
+  library(prophet)
+  library(dygraphs)
+  library(dplyr)
+  library(lmtest)
+  library(lubridate)
+})
 ```
 
-<h2><u>Student numbers in higher education - will the Trend continue?</u></h2>
+<h2><u>Stack Overflow - Are Programmers Moving Away from Traditional Forums?</u></h2>
 
-In this project the data we will be exploring tells us the number of students in higher education on a 
-yearly basis. The data has three categories, undergraduate, postgraduate and total, I will select the total
-category from the dataset, the code to do so will be included in this report.
+Stack Overflow has been a mainstay in any programmers arsenal for years, it was the go-to place to ask and get answers on any programming question. However, with the rise of new methods such as Large Large Models and other forums I will explore if Stack Overflow reigns supreme today and what the data says about its future.
 
-My goal with this project is to explore the trend behind the rising number of students in UK higher education
-and to find out if this trend will continue and if so what can we expect going forwards. This area is of 
-interest to universities who must adapt to the unforeseen demand of higher education and deal with the
-prospect that the demand is not sustainable.
+The data I use in this analysis is from Kaggle (it can be found here: https://www.kaggle.com/datasets/computingvictor/monthly-trends-in-stack-overflow-questions) and counts the number of questions asked on Stack Overflow per month, per language. The data is from 2008 to 2024 and includes 20 popular programming languages: C++, C#, TypeScript,  PHP, Swift, Ruby, Go, SQL, Kotlin, Scala, Shell, C, HTML, Objective-C, Perl, Matlab, R, Python, Java, Javascript. For my analysis, I group the data for all languages, such that y represents the sum of questions asked from these 20 languages. I perform this step to simplify the analysis and to focus on the overall trend of questions asked on Stack Overflow, rather than worrying about specific language trends (I recommend readers to try analysing  the separate languages and discover the trends there!).
 
-Lets load the data and take a look at it! Note we also filter for only the total category here and modify the dataframe such that the time is in column ds and the data in column y.
+
+### Loading the data
+
+***
+
+Let's begin by loading in the data and performing the data preprocessing steps required by the prophet model. We then show a simple line plot of the total number of questions asked over time.
+
+***
+
 ```{r fig.width = 10}
-library(ggplot2)
+data = read.csv("TotalQuestions.csv")
 
-# Load the dataset
-data <- read.csv('students_by_study_type.csv')
+data <- data %>%
+  mutate(Questions = rowSums(select(., -Month)))
 
-# Filter for "Total" category
-total_data <- data[data$Level.of.study == "Total",]
+data$yearmon <- as.yearmon(data$Month, "%Y-%m")
 
-total_data$Academic.Year <- as.Date(paste0(substr(total_data$Academic.Year, 1, 4), "-01-01"))
+data <- rename(data, ds = Month, y = Questions)
 
-#total_data = data.frame(total_data)
+dropped_data <- data.frame(
+  ds = as.Date(data$yearmon),
+  y = data$y
+)
 
-# Rename the columns
-names(total_data)[names(total_data) == "Academic.Year"] <- "ds"
-names(total_data)[names(total_data) == "Number"] <- "y"
-total_data = subset(total_data, select = c(ds, y))
-rownames(total_data) <- NULL
 
-# Lets take a look at the times in our timeseries
-print(total_data$ds)
+ggplot(data = dropped_data, aes(x = ds, y = y)) + 
+  geom_line() + # Draws the line connecting points
+  geom_point() + # Adds points at each data point
+labs(x = "Date", y = "Questions", title = "Questions Over Time") +
+  theme_minimal()
+```
+Let's break down the growth and decline of questions in Stack Overflow. The plot has three distinct areas, from 2008 to 2014 we see a steady increase of questions asked arising from the growth of Stack Overflow and the increase in the popularity of programming. From 2015 to 2017 the number of questions per month ask stayed relatively constant, however after this there began a decline. With a sharp rise in 2020, explained by the covid pandemic and people getting into programming due to their new found free time. Following this the decline picked up, with large language models appearing and programmer habits changing to favour them over Stack Overflow. We will explore this further using the prophet model.
 
-# Create a line plot
-p<- ggplot(total_data, aes(x = ds, y = y, group=1)) +
-  geom_line() + 
+***
+
+### Fitting the Prophet model
+
+I fit the prophet model, and then generate predictions for the next 36 months. I make use of the changepoint.prior.scale parameter to control the flexibility of the trend, and set it to 0.5, this makes the trend more flexible and provides a better fit to our data (shown by decreasing MAE, [here](#eval)).
+
+***
+```{r message=FALSE}
+model <- prophet(dropped_data, changepoint.prior.scale = 0.5)
+
+future <- make_future_dataframe(model, periods = 36, freq = "month")
+preds <- predict(model, future)
+```
+***
+### Visualising the forecast
+
+The plot below is dynamic allowing you to hover over points to get exact values. 
+The plot shows that the trend is expected to continue, with the number of questions being asked on Stack Overflow to decrease in the coming 36 months. This lines up with expectations, as the rise of ChatGPT continues, the traffic to Stack Overflow has been decreasing (https://gizmodo.com/stack-overflow-traffic-drops-as-coders-opt-for-chatgpt-1850427794).
+
+***
+
+```{r fig.width = 10, warning=FALSE}
+# Plot the forecast with yearly dates on the x-axis, using a dynamic plot
+dyplot.prophet(model, preds)
+```
+***
+
+### Forecast components
+```{r}
+# Plot the forecast components
+components_plot <- prophet_plot_components(model, preds)
+```
+
+We plot the trend and the yearly seasonal component. The trend shows a similar pattern to the actual data, with an increase and a steady decline. The seasonal component contains large variations away from the mean which occur towards the start of the year. This is unexpected, as due to the nature of the data I would expect there to be little seasonality.
+
+***
+
+### Running a linear model on the data
+
+Running a linear model on the data to check for trend is fruitless as a linear model is unable to fit the data. Visually we can observe this as the regression fails to fit the data in any meaningful sense, furthermore looking at the R-squared value of 0.06971 we conclude that the model fails to explain the variability in the data.
+
+```{r message=FALSE}
+start_date <- min(dropped_data$ds)
+dropped_data$time_since_start <- as.numeric(dropped_data$ds - start_date)
+
+model <- lm(y ~ time_since_start, data = dropped_data)
+summary(model)
+
+ggplot(dropped_data, aes(x = time_since_start, y = y)) +
   geom_point() +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_x_date(date_breaks = "2 years", date_labels = "%Y") + # Set x-axis breaks to every two years
-  labs(title = "Total Number of Students per Academic Year",
-       x = "Academic Year",
-       y = "Number of Students")
-p
+  geom_smooth(method = "lm", col = "blue") +
+  labs(x = "Time Since Start (days)", y = "Questions", title = "Trend of Questions Asked Over Time")
 ```
 
+***
+
+### Breusch - Pagan Test
+
+Now let's examine if the residuals are heteroskedastic, i.e. if the variance is increasing over time. We use the Breusch-Pagan test to check for heteroskedasticity, which is a hypothesis test where the null hypothesis is that the residuals are homoskedastic. A p-value < 0.05 would suggest that the residuals are heteroskedastic, as we have evidence to reject the null hypothesis.
+***
 
 ```{r}
-library(prophet)
+preds$ds <- as.Date(preds$ds)
 
-model1 = prophet(total_data)
+historical_forecast <- preds[preds$ds %in% dropped_data$ds, ]
+dropped_data$predicted <- historical_forecast$yhat[dropped_data$ds %in% historical_forecast$ds]
+dropped_data$residuals <- dropped_data$y - dropped_data$predicted
 
-future = make_future_dataframe(model1, 2, freq = "year")
-future
-preds = predict(model1, future)
-plot(model1, preds)
+bp_test <- bptest(dropped_data$residuals ~ dropped_data$predicted, data = dropped_data)
+print(bp_test)
 ```
-```{r}
-plot_forecast_component(model1, preds, name = "trend")
+The output of the Breusch-Pagan test is a p-value > 0.05, which means there is insufficient evidence to suggest the presence of heteroskedasticity This is good news as it means the residuals are homoskedastic.
+
+### Running with a yearly time period
+
+If I combine the data to count questions over years the number of data points decrease alot, however by allowing the trend to be more flexible as before we see a similar picture to the analysis on the monthly periods.
+
+```{r message=FALSE}
+yearly_data <- dropped_data %>%
+  group_by(year = year(ds)) %>%
+  summarise(y = sum(y))
+
+yearly_data$ds <- as.Date(paste0(yearly_data$year, "-01-01"))
+ggplot(data = yearly_data, aes(x = ds, y = y)) + 
+  geom_line() + # Draws the line connecting points
+  geom_point() + # Adds points at each data point
+  labs(x = "Date", y = "Questions", title = "Questions Over Time") +
+  theme_minimal()
+
+model_yearly <- prophet(yearly_data, changepoint.prior.scale = 0.5)
+yearly_future <- make_future_dataframe(model_yearly, periods = 3, freq = "year")
+yearly_preds <- predict(model_yearly, yearly_future)
+
+dyplot.prophet(model_yearly, yearly_preds)
+
+prophet_plot_components(model_yearly, yearly_preds)
+```
+
+The forecast and trend are similar to the monthly model, however the seasonality is different. The yearly seasonality is more prounouced in the start and end of the year and relatively close to the mean in the middle of the year. This unexpected and would be best investigated by looking at the data in more detail. Another interestng angle would be to look at daily or weekly questions asked data, however this is unavailable to me currently.
+
+***
+
+### Evaluating the models {#eval}
+
+I have ran 3 different models and I want to evaluate the performance of these models and confirm if the changes I have actually improve the performance of the model. To do so I will report the Mean Absolute Error, which tells us the average of the absolute errors between predicted values and actual values. I will report three scores, one for the base prophet model ran on monthly period, one for monthly period model ran with changepoint.prior.scale = 0.5 and the last for the yearly period model.
+
+```{r echo=FALSE, message=FALSE}
+base_model <- prophet(dropped_data)
+
+base_future <- make_future_dataframe(base_model, periods = 36, freq = "month")
+base_preds <- predict(base_model, base_future)
+
+base_preds$ds <- as.Date(base_preds$ds)
+historical_forecast_base <- base_preds[base_preds$ds %in% dropped_data$ds, ]
+dropped_data$predicted_base <- historical_forecast_base$yhat[dropped_data$ds %in% historical_forecast_base$ds]
 
 ```
 
-```{r}
-total_data
+```{r echo=FALSE}
+dropped_data$abs_error_base <- abs(dropped_data$y - dropped_data$predicted_base)
+mae_monthly_base <- mean(dropped_data$abs_error_base, na.rm = TRUE)
+
+dropped_data$abs_error <- abs(dropped_data$y - dropped_data$predicted)
+mae_monthly <- mean(dropped_data$abs_error, na.rm = TRUE)
+
+yearly_preds$ds <- as.Date(yearly_preds$ds)
+historical_forecast_yearly <- yearly_preds[yearly_preds$ds %in% yearly_data$ds, ]
+yearly_data$predicted <- historical_forecast_yearly$yhat[yearly_data$ds %in% historical_forecast_yearly$ds]
+
+yearly_data$abs_error <- abs(yearly_data$y - yearly_data$predicted)
+mae_yearly <- mean(yearly_data$abs_error, na.rm = TRUE)
+
+# Print the MAE
+cat("Monthly base, MAE:", mae_monthly_base, "\n")
+cat("Monthly, changepoint.prior.scale = 0.5 MAE:", mae_monthly, "\n")
+cat("Yearly, MAE:", mae_yearly, "\n")
+
 ```
+
+The reduction in MAE from the base model to adding the changepoint.prior.scale parameter shows that allowing the trend to be more flexible improved the fit the model achieves.
+The huge error in the yearly model, highlights a point made previously where the lack of data is causing the model to poorly fit the data. The model performing better when the trend is allowed to be more flexible shows the base model was underfitting the data.
+
+***
+
+## Conclusion
+To answer the question I posed at the beginning of this report, it appears that programmers are moving away from Stack Overflow and the analysis suggests that this trend will continue. The data shows a steady decline in the number of questions being asked on 
+Stack overflow, on both the yearly and montlhy period analysis. The analysis itself is supported by the Breusch-Pagan test showing that the data is homoskedastic and the variance does not vary over time. The linear model also showed that the trend is not linear and the R-squared value of 0.06971 shows that the model fails to explain the variability in the data. On the performance of the model itself, allowing the trend to be more flexible allowed Prophet to better fit the data, highlighting the need for hyperparameter tuning. Overall, the prophet model showed that the downward trend is expected to continue, with the number of questions being asked on Stack Overflow to decrease in the coming 36 months. This lines up with expectations, as the rise of ChatGPT continues. However, there may be a simpler solution. Given the age and nature of Stack Overflow, where if a question already exists a new similar question cannot be posted, the site may have reached a saturation point in the questions that could possibly be asked. 
+
