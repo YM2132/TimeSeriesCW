@@ -17,7 +17,6 @@ htmltools::img(src = knitr::image_uri("QMlogo.png"),
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 suppressPackageStartupMessages({
-  # Load the necessary libraries
   library(zoo)
   library(ggplot2)
   library(prophet)
@@ -60,8 +59,8 @@ dropped_data <- data.frame(
 
 
 ggplot(data = dropped_data, aes(x = ds, y = y)) + 
-  geom_line() + # Draws the line connecting points
-  geom_point() + # Adds points at each data point
+  geom_line() +
+  geom_point() +
 labs(x = "Date", y = "Questions", title = "Questions Over Time") +
   theme_minimal()
 ```
@@ -89,14 +88,12 @@ The plot shows that the trend is expected to continue, with the number of questi
 ***
 
 ```{r fig.width = 10, warning=FALSE}
-# Plot the forecast with yearly dates on the x-axis, using a dynamic plot
 dyplot.prophet(model, preds)
 ```
 ***
 
 ### Forecast components
 ```{r}
-# Plot the forecast components
 components_plot <- prophet_plot_components(model, preds)
 ```
 
@@ -151,8 +148,8 @@ yearly_data <- dropped_data %>%
 
 yearly_data$ds <- as.Date(paste0(yearly_data$year, "-01-01"))
 ggplot(data = yearly_data, aes(x = ds, y = y)) + 
-  geom_line() + # Draws the line connecting points
-  geom_point() + # Adds points at each data point
+  geom_line() +
+  geom_point() +
   labs(x = "Date", y = "Questions", title = "Questions Over Time") +
   theme_minimal()
 
@@ -165,7 +162,7 @@ dyplot.prophet(model_yearly, yearly_preds)
 prophet_plot_components(model_yearly, yearly_preds)
 ```
 
-The forecast and trend are similar to the monthly model, however the seasonality is different. The yearly seasonality is more prounouced in the start and end of the year and relatively close to the mean in the middle of the year. This unexpected and would be best investigated by looking at the data in more detail. Another interestng angle would be to look at daily or weekly questions asked data, however this is unavailable to me currently.
+The forecast and trend are similar to the monthly model, however the seasonality is different. The yearly seasonality is more pronounced in the start and end of the year and relatively close to the mean in the middle of the year. This unexpected and would be best investigated by looking at the data in more detail. Another interestng angle would be to look at daily or weekly questions asked data, however this is unavailable to me currently.
 
 ***
 
